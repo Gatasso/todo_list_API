@@ -23,8 +23,21 @@ def home():
 
 # Create Task Endpoint
 @app.route("/task", methods=['POST'])
+@jwt_required()
 def create_task():
-    
+    data = request.json
+    title = data['title']
+    description = data['description']
+    user_id = get_jwt_identity()
+
+    cursor = my_sql.connection.cursor()
+    cursor.execute('''
+        INSERT INTO task (title, description, id_user)
+        VALUES (%s, %s, %s)
+    ''', (title, description, user_id))
+    my_sql.connection.commit()
+    cursor.close()
+
     return jsonify({"message": "Task created successfully"}), 201
 
 # Update Task Endpoint
