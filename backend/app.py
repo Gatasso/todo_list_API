@@ -1,10 +1,14 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from flask_mysqldb import MySQL
 from db_config import init_db
 from db_model import create_tables_db
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash,check_password_hash
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 app = Flask(__name__)
+
+app.config['JWT_SECRET_KEY'] = 's3cr3t_k3y'
+jwt = JWTManager(app)
 
 my_sql = init_db(app)
 
@@ -20,6 +24,7 @@ def home():
 # Create Task Endpoint
 @app.route("/task", methods=['POST'])
 def create_task():
+    
     return jsonify({"message": "Task created successfully"}), 201
 
 # Update Task Endpoint
@@ -66,7 +71,21 @@ def register_user():
 # Login Endpoint
 @app.route('/login', methods=['POST'])
 def login_user():
-    return jsonify ({"message":"Login done successfuly"})
+    data = request.json
+    username = data['username']
+    password = data['password']
+
+    cursor = my_sql.connection.cursor()
+    cursor.execute("SELECT * FROM user WHERE username=%s", (username,))
+    user = cursor.fetchone()
+    cursor.close()
+
+    if user is None or not check_password_hash(user[3], password):
+        return jsonify({"msg": "Bad username or password"}), 401
+
+    access_token = create_access_token(identity=user[0])
+
+    return jsonify({"token": access_token}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
