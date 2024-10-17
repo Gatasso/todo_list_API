@@ -68,8 +68,23 @@ def get_task_by_id(id):
 
 # Get all tasks Endpoint
 @app.route("/task/all", methods=['GET'])
+@jwt_required()
 def get_all_tasks():
-    return jsonify(message="All Tasks")
+    cursor = my_sql.connection.cursor()
+    cursor.execute("SELECT * FROM task")
+    tasks = cursor.fetchall()
+    cursor.close()
+
+    task_list = []
+    for task in tasks:
+        task_list.append({
+            'id': task[0],
+            'title': task[1],
+            'description': task[2],
+            'status': task[3],
+            'created_at': task[4]
+        })
+    return jsonify(task_list), 200
 
 # Delete Task Endpoint
 @app.route("/task", methods=['DELETE'])
