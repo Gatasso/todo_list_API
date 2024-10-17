@@ -28,29 +28,48 @@ def create_task():
     data = request.json
     title = data['title']
     description = data['description']
-    user_id = get_jwt_identity()
+    id_user = get_jwt_identity()
 
     cursor = my_sql.connection.cursor()
     cursor.execute('''
         INSERT INTO task (title, description, id_user)
         VALUES (%s, %s, %s)
-    ''', (title, description, user_id))
+    ''', (title, description, id_user))
     my_sql.connection.commit()
     cursor.close()
 
     return jsonify({"message": "Task created successfully"}), 201
 
 # Update Task Endpoint
-@app.route("/task", methods=['PUT'])
-def update_task():
-    return jsonify(message="Task updated")
+@app.route("/task/<int:id>", methods=['PUT'])
+@jwt_required()
+def update_task_by_id(id):
+    cursor = my_sql.connection.cursor()
+    cursor.execute("SELECT * from task where id=%s", (id,))
+    task = cursor.fetchone()
+    cursor.close()
+
+    if not task:
+        return jsonify({"message":"Task not found"}), 404
+    
+    task_data = request.json
+    title = task_data['title']
+    description = task_data['description']
+    status = task_data['status']
+    id_user = get_jwt_identity()
+
+    cursor = my_sql.connection.cursor()
+    cursor.execute('UPDATE task SET title = %s, description = %s, status= %s, id_user= %s where id=%s', (title, description, status, id_user, id))
+    my_sql.connection.commit()
+    cursor.close()
+    return jsonify({"message":"Task updated"}), 200
 
 # Get Task By Id Endpoint
 @app.route("/task/<int:id>", methods=['GET'])
 @jwt_required()
 def get_task_by_id(id):
     cursor = my_sql.connection.cursor()
-    cursor.execute("SELECT * FROM task WHERE id=%s", (id,))
+    cursor.execute("SELECT * FROM task WHERE id=%s", (id))
     task = cursor.fetchone()
     cursor.close()
 
