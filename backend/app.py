@@ -46,9 +46,25 @@ def update_task():
     return jsonify(message="Task updated")
 
 # Get Task By Id Endpoint
-@app.route("/task", methods=['GET'])
-def get_task_by_id():
-    return jsonify(message="Task selected")
+@app.route("/task/<int:id>", methods=['GET'])
+@jwt_required()
+def get_task_by_id(id):
+    cursor = my_sql.connection.cursor()
+    cursor.execute("SELECT * FROM task WHERE id=%s", (id,))
+    task = cursor.fetchone()
+    cursor.close()
+
+    if not task:
+        return jsonify({"message": "Task not found"}), 404
+
+    task_data = {
+        'id': task[0],
+        'title': task[1],
+        'description': task[2],
+        'status': task[3],
+        'created_at': task[4]
+    }
+    return jsonify(task_data), 200
 
 # Get all tasks Endpoint
 @app.route("/task/all", methods=['GET'])
