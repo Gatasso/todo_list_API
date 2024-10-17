@@ -87,9 +87,21 @@ def get_all_tasks():
     return jsonify(task_list), 200
 
 # Delete Task Endpoint
-@app.route("/task", methods=['DELETE'])
-def delete_task_by_id():
-    return jsonify(message="Task deleted")
+@app.route("/task/<int:id>", methods=['DELETE'])
+@jwt_required()
+def delete_task_by_id(id):
+    cursor = my_sql.connection.cursor()
+    cursor.execute("SELECT * FROM task WHERE id=%s", (id,))
+    task = cursor.fetchone()
+
+    if not task:
+        return jsonify({"message": "Task not found"}), 404
+
+    cursor.execute("DELETE FROM task WHERE id=%s", (id,))
+    my_sql.connection.commit()
+    cursor.close()
+
+    return jsonify({"message": "Task deleted successfully"}), 200
 
 #*************************************************************************************************************************************************************#
 # User ENDPOINTS
