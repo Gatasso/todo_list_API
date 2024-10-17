@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_mysqldb import MySQL
 from db_config import init_db
 from db_model import create_tables_db
+from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
 
@@ -47,6 +48,19 @@ def delete_task_by_id():
 # Register User Endpoint
 @app.route('/register', methods=['POST'])
 def register_user():
+    data = request.json
+    name = data['name']
+    username = data['username']
+    password = generate_password_hash(data['password'], method='pbkdf2:sha256')
+
+    cursor = my_sql.connection.cursor()
+    cursor.execute('''
+        INSERT INTO user (name, username, password)
+        VALUES (%s, %s, %s)
+    ''', (name, username, password))
+    my_sql.connection.commit()
+    cursor.close()
+
     return jsonify({"message": "User registered successfully"}), 201
 
 # Login Endpoint
